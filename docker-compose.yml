@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - 8004:8000
+    command: uvicorn main:app --host 0.0.0.0 --reload
+    volumes:
+      - ./backend:/usr/src/app
+    environment:
+      - GIT_PYTHON_REFRESH=quiet
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  worker:
+    build: ./backend
+    command: celery -A worker.celery worker --loglevel=info --logfile=logs/celery.log
+    volumes:
+      - ./backend:/usr/src/app
+    environment:
+      - GIT_PYTHON_REFRESH=quiet
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - backend
+      - redis
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  dashboard:
+    build: ./backend
+    command: celery --broker=redis://redis:6379/0 flower --port=5555
+    ports:
+      - 5556:5555
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - backend
+      - redis
+      - worker
+
+  reactapp:
+    build: ./front/vk
+    container_name: react_vite_app
+    ports:
+      - "3000:3000"

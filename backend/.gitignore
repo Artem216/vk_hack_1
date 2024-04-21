@@ -1,0 +1,12 @@
+__pycache__
+.vscode
+docker/docker
+db_data
+config/.env
+venv
+.venv
+*.log
+pyrightconfig.json
+alembic
+alembic.ini
+model_fasttext.bin
